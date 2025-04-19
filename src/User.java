@@ -264,7 +264,7 @@ public abstract class User {
         
         while (inMenu) {
             // Display the customer menu options
-            System.out.println("\n=== Welcome to The Kooks! ===");
+            System.out.println("\n=== Welcome to The Inventory management system! ===");
             System.out.println("1. Start Order");
             System.out.println("2. Order History");
             System.out.println("0. Exit");
@@ -475,6 +475,8 @@ public abstract class User {
             System.out.println("3. Remove Item");
             System.out.println("4. Restock Item");
             System.out.println("5. Edit Item Price");
+            System.out.println("6. Check Low Stock Alert");
+            System.out.println("7. Stock Prediction");
             System.out.println("0. Return to Admin Menu");
             System.out.print("Enter your choice: ");
             
@@ -532,6 +534,30 @@ public abstract class User {
                         System.out.println("Price updated successfully!");
                     } catch (IOException e) {
                         System.out.println("Error updating price: " + e.getMessage());
+                    }
+                    break;
+                case 6:
+                    try {
+                        // Ask for threshold value
+                        System.out.print("Enter stock threshold for alert: ");
+                        int threshold = sc.nextInt();
+                        sc.nextLine(); // Consume newline
+                        
+                        item.lowStockAlert(threshold); // Call the new low stock alert method
+                    } catch (Exception e) {
+                        System.out.println("Error checking low stock: " + e.getMessage());
+                    }
+                    break;
+                case 7:
+                    try {
+                        // Ask for number of days to predict
+                        System.out.print("Enter number of days for prediction: ");
+                        int days = sc.nextInt();
+                        sc.nextLine(); // Consume newline
+                        
+                        item.predictStock(days); // Call the new stock prediction method
+                    } catch (Exception e) {
+                        System.out.println("Error generating stock prediction: " + e.getMessage());
                     }
                     break;
                 default:

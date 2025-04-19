@@ -5,7 +5,7 @@ public class Main {
 
     // Display the main menu and return user's choice
     public static String mainPage() {
-        System.out.println("\nWelcome to The Kooks!");
+        System.out.println("\nWelcome to The Inventory Management System!");
         System.out.println("Please choose the following options: ");
         System.out.println("1. Customer Log In");
         System.out.println("2. Admin Log In");
@@ -53,7 +53,7 @@ public class Main {
                     break;
                     
                 case "4":
-                    System.out.println("Thank you for visiting The Kooks! Goodbye.");
+                    System.out.println("Thank you for visiting The Inventory Management System! Goodbye.");
                     break;
                     
                 default:

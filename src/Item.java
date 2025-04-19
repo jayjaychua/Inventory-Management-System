@@ -1,5 +1,4 @@
 import java.io.*; //BufferedReader, FileReader, IOException
-//import java.text.DateFormat.Field;
 import java.util.*; // ArrayList, Array, List
 
 public class Item {
@@ -334,6 +333,95 @@ public class Item {
 			uw.close();
 		}
 		
+	}
+
+	public void lowStockAlert(int threshold) throws IOException {
+		System.out.println("\n=== Low Stock Alert ===");
+		boolean lowStockFound = false;
+		
+		try {
+			// Read from CSV file
+			rr = new BufferedReader(new FileReader(path));
+			// Skip header
+			rr.readLine();
+			
+			System.out.printf("%-8s %-22s %-10s %-15s%n", 
+					"ID", "Item Name", "Stock", "Status");
+			System.out.println("-----------------------------------------------------------");
+			
+			String line;
+			while ((line = rr.readLine()) != null) {
+				String[] parts = line.split(",");
+				if (parts.length >= 3) {
+					int currentStock = Integer.parseInt(parts[2].trim());
+					
+					// Check if stock is below threshold
+					if (currentStock <= threshold) {
+						System.out.printf("%-8s %-22s %-10d %-15s%n", 
+								parts[0], parts[1], currentStock, 
+								currentStock == 0 ? "OUT OF STOCK!" : "LOW STOCK!");
+						lowStockFound = true;
+					}
+				}
+			}
+			
+			if (!lowStockFound) {
+				System.out.println("No items below threshold of " + threshold);
+			}
+			
+		} catch (Exception e) {
+			System.out.println("Error checking low stock: " + e.getMessage());
+		} finally {
+			if (rr != null) {
+				rr.close();
+			}
+		}
+	}
+
+	public void predictStock(int daysToPredict) throws IOException {
+		System.out.println("\n=== Stock Prediction for Next " + daysToPredict + " Days ===");
+		
+		try {
+			// Read from CSV file
+			rr = new BufferedReader(new FileReader(path));
+			// Skip header
+			rr.readLine();
+			
+			System.out.printf("%-8s %-22s %-10s %-15s %-15s %-15s%n", 
+					"ID", "Item Name", "Current", "Daily Sales", "Predicted", "Order");
+			System.out.println("----------------------------------------------------------------------------------------");
+			
+			String line;
+			while ((line = rr.readLine()) != null) {
+				String[] parts = line.split(",");
+				if (parts.length >= 6) {
+					String id = parts[0];
+					String name = parts[1];
+					int currentStock = Integer.parseInt(parts[2].trim());
+					
+					// Calculate daily sales rate (assuming sold column represents total items sold)
+					int soldItems = parts[3].trim().isEmpty() ? 0 : Integer.parseInt(parts[3].trim());
+					
+					// For simplicity, assume sales are over 30 days (adjust as needed)
+					double dailySalesRate = soldItems / 30.0;
+					
+					// Predict stock needed
+					double predictedUsage = dailySalesRate * daysToPredict;
+					int recommendedOrder = currentStock < predictedUsage ? 
+							(int)Math.ceil(predictedUsage - currentStock) : 0;
+					
+					System.out.printf("%-8s %-22s %-10d %-15.2f %-15.2f %-15d%n", 
+							id, name, currentStock, dailySalesRate, predictedUsage, recommendedOrder);
+				}
+			}
+			
+		} catch (Exception e) {
+			System.out.println("Error predicting stock: " + e.getMessage());
+		} finally {
+			if (rr != null) {
+				rr.close();
+			}
+		}
 	}
 	
 }

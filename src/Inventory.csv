@@ -1,11 +1,11 @@
 ItemID,ItemName,Stock,Sold,UnitPrice,TotalSales
-B001,Baguette,47,3,18.9,56.70
-B002,Garlic Bread,50,0,2.80,0
-B003,Mexico Bun,49,1,3.80,3.80
-C001,Tiramisu,49,1,22.80,22.80
-C002,Black Forest,50,0,20.80,0
-C003,Rum Raisin,48,2,24.80,49.60
-K001,Ginger Bread Cookies,50,0,6.80,0
-K002,Choco Chip Cookies,50,0,6.80,0
-K003,Matcha Cookies,50,0,10.00,0
+F001,Grilled Chicken Chop,47,3,22.00,56.70
+F002,Fish and Chip,50,0,25.80,0
+F003,Beef Steak,49,1,30.80,3.80
+F004,Lamb Shank,49,1,30.80,22.80
+F005,Caesar Salad,50,0,16.80,0
+S001,Spaghetti aglio olio,48,2,20.80,49.60
+S002,Spaghetti bolognese,50,0,20.80,0
+B001,Latte Coffee,50,0,10.80,0
+
 
