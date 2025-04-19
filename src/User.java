@@ -1,5 +1,11 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.Scanner;
 
 public abstract class User {
     // Constants and Static Variables
@@ -389,7 +395,7 @@ public abstract class User {
     }
     
     // Admin menu - only for Admin users
-    public void adminMenu() {
+        public void adminMenu() {
         // Boolean to control the admin menu loop
         boolean adminInMenu = true;
         
@@ -398,7 +404,8 @@ public abstract class User {
             System.out.println("1. View Customer list");
             System.out.println("2. Inventory Management");
             System.out.println("3. Generate Sales Report");
-            System.out.println("4. Exit");
+            System.out.println("4. Customer Management"); // Renamed from User Role Management
+            System.out.println("5. Exit");
             System.out.print("Enter your choice: ");
             
             int choice;
@@ -416,19 +423,7 @@ public abstract class User {
             switch (choice) {
                 case 1:
                     // Display registered customer list
-                    System.out.println("\n=== Registered Customer List ===");
-                    System.out.println("Total customers: " + (allUsers.size() - 1)); // Exclude admin
-                    for (User user : allUsers) {
-                        if (!(user instanceof AdminUser)) {
-                            // Print user details if not an admin
-                            System.out.println("ID: " + user.getUId() + 
-                                " | Type: " + user.getUserType() + 
-                                " | Name: " + user.getUName() + 
-                                " | Phone: " + user.getUPhone());
-                        }
-                    }
-                    System.out.println("\nPress Enter to continue...");
-                    sc.nextLine(); // Wait for enter key
+                    displayAllCustomers();
                     break;
                 
                 case 2:
@@ -438,18 +433,15 @@ public abstract class User {
                 
                 case 3:
                     // Generate and display sales report
-                    try {
-                        item.report();
-                        System.out.println("\nPress Enter to continue...");
-                        sc.nextLine();
-                    } catch (IOException e) {
-                        System.out.println("Error reading menu file: " + e.getMessage());
-                        System.out.println("\nPress Enter to continue...");
-                        sc.nextLine();
-                    }
+                    // [existing code]
+                    break;
+                    
+                case 4:
+                    // User role management
+                    userRoleManagement();
                     break;
                 
-                case 4:
+                case 5:
                     // Exit admin menu
                     System.out.println("Exiting to main menu...");
                     adminInMenu = false;
@@ -465,6 +457,7 @@ public abstract class User {
     }
     
     // Inventory management helper method
+    // Update the handleInventoryManagement method in the User class
     private void handleInventoryManagement() {
         boolean inventoryMenu = true;
         
@@ -476,7 +469,7 @@ public abstract class User {
             System.out.println("4. Restock Item");
             System.out.println("5. Edit Item Price");
             System.out.println("6. Check Low Stock Alert");
-            System.out.println("7. Stock Prediction");
+            System.out.println("7. Stock Duration Prediction"); // Updated menu option name
             System.out.println("0. Return to Admin Menu");
             System.out.print("Enter your choice: ");
             
@@ -543,21 +536,17 @@ public abstract class User {
                         int threshold = sc.nextInt();
                         sc.nextLine(); // Consume newline
                         
-                        item.lowStockAlert(threshold); // Call the new low stock alert method
+                        item.lowStockAlert(threshold); // Call the low stock alert method
                     } catch (Exception e) {
                         System.out.println("Error checking low stock: " + e.getMessage());
                     }
                     break;
                 case 7:
                     try {
-                        // Ask for number of days to predict
-                        System.out.print("Enter number of days for prediction: ");
-                        int days = sc.nextInt();
-                        sc.nextLine(); // Consume newline
-                        
-                        item.predictStock(days); // Call the new stock prediction method
+                        // Call the new stock duration prediction method
+                        item.predictStockDuration(); // Use the new method name
                     } catch (Exception e) {
-                        System.out.println("Error generating stock prediction: " + e.getMessage());
+                        System.out.println("Error predicting stock duration: " + e.getMessage());
                     }
                     break;
                 default:
@@ -568,6 +557,222 @@ public abstract class User {
             // Wait for enter key before refreshing inventory menu
             System.out.println("\nPress Enter to continue...");
             sc.nextLine();
+        }
+    }
+
+    // Role Management method for AdminUser to manage customers
+    public void userRoleManagement() {
+        boolean roleMenu = true;
+        
+        while (roleMenu) {
+            System.out.println("\n=== Customer Management ===");
+            System.out.println("1. View All Customers");
+            System.out.println("2. Edit Customer Information");
+            System.out.println("3. Remove Customer");
+            System.out.println("0. Return to Admin Menu");
+            System.out.print("Enter your choice: ");
+            
+            int choice;
+            try {
+                choice = sc.nextInt();
+                sc.nextLine(); // Consume newline
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input! Please enter a number.");
+                sc.nextLine(); // Clear invalid input
+                continue;
+            }
+            
+            switch (choice) {
+                case 0:
+                    System.out.println("Returning to Admin Menu...");
+                    return;
+                    
+                case 1:
+                    // Display all customers (not admins)
+                    displayAllCustomers();
+                    break;
+                    
+                case 2:
+                    // Edit customer information
+                    editCustomerInfo();
+                    break;
+                    
+                case 3:
+                    // Remove customer
+                    removeCustomer();
+                    break;
+                    
+                default:
+                    System.out.println("Invalid choice! Please try again.");
+            }
+            
+            System.out.println("\nPress Enter to continue...");
+            sc.nextLine();
+        }
+    }
+
+    // Helper method to display all customers (not admins)
+    private void displayAllCustomers() {
+        System.out.println("\n=== Customer List ===");
+        
+        // Count customers (excluding admins)
+        int customerCount = 0;
+        for (User user : allUsers) {
+            if (!user.getUserType().equals("Admin")) {
+                customerCount++;
+            }
+        }
+        
+        System.out.println("Total customers: " + customerCount);
+        System.out.printf("%-10s %-10s %-20s %-15s%n", "ID", "Type", "Name", "Phone");
+        System.out.println("---------------------------------------------------");
+        
+        // Display only customers (not admins)
+        for (User user : allUsers) {
+            if (!user.getUserType().equals("Admin")) {
+                System.out.printf("%-10s %-10s %-20s %-15s%n", 
+                        user.getUId(), 
+                        user.getUserType(), 
+                        user.getUName(), 
+                        user.getUPhone());
+            }
+        }
+    }
+
+    // Helper method to edit customer information
+    private void editCustomerInfo() {
+        System.out.println("\n=== Edit Customer Information ===");
+        System.out.print("Enter Customer ID to edit: ");
+        String userId = sc.nextLine();
+        
+        // Find the customer
+        User userToEdit = null;
+        for (User user : allUsers) {
+            if (user.getUId().equals(userId) && !user.getUserType().equals("Admin")) {
+                userToEdit = user;
+                break;
+            }
+        }
+        
+        if (userToEdit == null) {
+            System.out.println("Customer not found with ID: " + userId);
+            return;
+        }
+        
+        // Display current customer info
+        System.out.println("\nCurrent Customer Information:");
+        System.out.println("ID: " + userToEdit.getUId());
+        System.out.println("Type: " + userToEdit.getUserType());
+        System.out.println("Name: " + userToEdit.getUName());
+        System.out.println("Phone: " + userToEdit.getUPhone());
+        
+        // Edit menu
+        System.out.println("\nWhat would you like to edit?");
+        System.out.println("1. Name");
+        System.out.println("2. Phone Number");
+        System.out.println("0. Cancel");
+        System.out.print("Enter choice: ");
+        
+        int editChoice;
+        try {
+            editChoice = sc.nextInt();
+            sc.nextLine(); // Consume newline
+        } catch (InputMismatchException e) {
+            System.out.println("Invalid input! Cancelling edit operation.");
+            sc.nextLine(); // Clear invalid input
+            return;
+        }
+        
+        String newValue = "";
+        String fieldToEdit = "";
+        
+        switch (editChoice) {
+            case 0:
+                System.out.println("Edit operation cancelled.");
+                return;
+                
+            case 1:
+                System.out.print("Enter new name: ");
+                newValue = sc.nextLine();
+                fieldToEdit = "name";
+                // Update the user object
+                userToEdit.uName = newValue;
+                break;
+                
+            case 2:
+                System.out.print("Enter new phone number: ");
+                newValue = sc.nextLine();
+                fieldToEdit = "phone";
+                // Update the user object
+                userToEdit.uPhone = newValue;
+                break;
+                
+            default:
+                System.out.println("Invalid choice! Edit operation cancelled.");
+                return;
+        }
+        
+        // Update the CSV file
+        updateUserCSV();
+        
+        System.out.println("Customer " + fieldToEdit + " updated successfully!");
+    }
+
+    // Helper method to remove a customer
+    private void removeCustomer() {
+        System.out.println("\n=== Remove Customer ===");
+        System.out.print("Enter Customer ID to remove: ");
+        String userId = sc.nextLine();
+        
+        // Find the customer (not admin)
+        User userToRemove = null;
+        int userIndex = -1;
+        
+        for (int i = 0; i < allUsers.size(); i++) {
+            User user = allUsers.get(i);
+            if (user.getUId().equals(userId) && !user.getUserType().equals("Admin")) {
+                userToRemove = user;
+                userIndex = i;
+                break;
+            }
+        }
+        
+        if (userToRemove == null) {
+            System.out.println("Customer not found with ID: " + userId);
+            return;
+        }
+        
+        // Confirm deletion
+        System.out.println("\nCustomer found:");
+        System.out.println("ID: " + userToRemove.getUId());
+        System.out.println("Type: " + userToRemove.getUserType());
+        System.out.println("Name: " + userToRemove.getUName());
+        
+        System.out.print("\nAre you sure you want to remove this customer? (y/n): ");
+        String confirm = sc.nextLine().trim().toLowerCase();
+        
+        if (confirm.equals("y") || confirm.equals("yes")) {
+            // Remove customer from ArrayList
+            allUsers.remove(userIndex);
+            
+            // Update the CSV file
+            updateUserCSV();
+            
+            System.out.println("Customer removed successfully!");
+        } else {
+            System.out.println("Customer removal cancelled.");
+        }
+    }
+
+    private void updateUserCSV() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_USER, false))) {
+            // Write each user to the CSV file
+            for (User user : allUsers) {
+                writer.write(user.toCSVString());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error updating user data file: " + e.getMessage());
         }
     }
 }

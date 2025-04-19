@@ -1,5 +1,16 @@
-import java.io.*; //BufferedReader, FileReader, IOException
-import java.util.*; // ArrayList, Array, List
+//BufferedReader, FileReader, IOException
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 public class Item {
 	
@@ -378,52 +389,141 @@ public class Item {
 		}
 	}
 
-	public void predictStock(int daysToPredict) throws IOException {
-		System.out.println("\n=== Stock Prediction for Next " + daysToPredict + " Days ===");
+	public void predictStockDuration() throws IOException {
+		System.out.println("\n=== Stock Duration Prediction ===");
 		
+		// Map to track sales by item ID
+		Map<String, Integer> totalSalesByItem = new HashMap<>();
+		Map<String, LocalDateTime> firstOrderDate = new HashMap<>();
+		Map<String, LocalDateTime> lastOrderDate = new HashMap<>();
+		
+		// Read order_items.csv to gather sales data
+		File orderItemsFile = new File("src/order_items.csv");
+		if (orderItemsFile.exists()) {
+			try (BufferedReader itemReader = new BufferedReader(new FileReader(orderItemsFile))) {
+				// Skip header
+				itemReader.readLine();
+				
+				String line;
+				while ((line = itemReader.readLine()) != null) {
+					if (line.trim().isEmpty()) continue;
+					
+					String[] fields = line.split(",");
+					if (fields.length >= 5) {
+						String orderId = fields[0];
+						String itemId = fields[1];
+						int quantity = Integer.parseInt(fields[2].trim());
+						
+						// Add to total sales for this item
+						totalSalesByItem.put(itemId, 
+							totalSalesByItem.getOrDefault(itemId, 0) + quantity);
+						
+						// Find order date by looking up order ID in orders.csv
+						try (BufferedReader orderReader = new BufferedReader(new FileReader("src/orders.csv"))) {
+							// Skip header
+							orderReader.readLine();
+							
+							String orderLine;
+							while ((orderLine = orderReader.readLine()) != null) {
+								String[] orderFields = orderLine.split(",");
+								if (orderFields.length >= 3 && orderFields[0].equals(orderId)) {
+									// Parse the date
+									DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+									LocalDateTime orderDate = LocalDateTime.parse(orderFields[2], formatter);
+									
+									// Update first order date if this is earlier
+									if (!firstOrderDate.containsKey(itemId) || 
+										orderDate.isBefore(firstOrderDate.get(itemId))) {
+										firstOrderDate.put(itemId, orderDate);
+									}
+									
+									// Update last order date if this is later
+									if (!lastOrderDate.containsKey(itemId) || 
+										orderDate.isAfter(lastOrderDate.get(itemId))) {
+										lastOrderDate.put(itemId, orderDate);
+									}
+									
+									break;
+								}
+							}
+						} catch (Exception e) {
+							// Handle error reading orders file
+							System.out.println("Error reading orders file: " + e.getMessage());
+						}
+					}
+				}
+			} catch (Exception e) {
+				System.out.println("Error reading order items: " + e.getMessage());
+			}
+		}
+		
+		// Now read inventory and calculate predictions
 		try {
 			// Read from CSV file
 			rr = new BufferedReader(new FileReader(path));
 			// Skip header
 			rr.readLine();
 			
-			System.out.printf("%-8s %-22s %-10s %-15s %-15s %-15s%n", 
-					"ID", "Item Name", "Current", "Daily Sales", "Predicted", "Order");
-			System.out.println("----------------------------------------------------------------------------------------");
+			System.out.printf("%-8s %-22s %-10s %-15s %-15s%n", 
+					"ID", "Item Name", "Current", "Daily Sales", "Days Remaining");
+			System.out.println("-----------------------------------------------------------------------------");
 			
 			String line;
 			while ((line = rr.readLine()) != null) {
 				String[] parts = line.split(",");
-				if (parts.length >= 6) {
+				if (parts.length >= 3) {
 					String id = parts[0];
 					String name = parts[1];
 					int currentStock = Integer.parseInt(parts[2].trim());
 					
-					// Calculate daily sales rate (assuming sold column represents total items sold)
-					int soldItems = parts[3].trim().isEmpty() ? 0 : Integer.parseInt(parts[3].trim());
+					double dailySalesRate = 0.0;
+					String daysRemaining = "∞ (No sales data)";
 					
-					// For simplicity, assume sales are over 30 days (adjust as needed)
-					double dailySalesRate = soldItems / 30.0;
+					// If we have sales data for this item
+					if (totalSalesByItem.containsKey(id) && 
+						firstOrderDate.containsKey(id) && 
+						lastOrderDate.containsKey(id)) {
+						
+						int totalSold = totalSalesByItem.get(id);
+						LocalDateTime first = firstOrderDate.get(id);
+						LocalDateTime last = lastOrderDate.get(id);
+						
+						// Calculate the time span in days
+						long daysDifference = java.time.Duration.between(first, last).toDays();
+						
+						// Ensure we don't divide by zero - use at least 1 day
+						daysDifference = Math.max(1, daysDifference);
+						
+						// Calculate daily sales rate based on actual sales history
+						dailySalesRate = (double) totalSold / daysDifference;
+						
+						// Calculate how many days the stock will last
+						if (dailySalesRate > 0) {
+							double days = currentStock / dailySalesRate;
+							daysRemaining = String.format("%.1f days", days);
+							
+							// Add alert for critically low stock
+							if (days < 7) {
+								daysRemaining += " (CRITICAL!)";
+							} else if (days < 14) {
+								daysRemaining += " (LOW)";
+							}
+						}
+					}
 					
-					// Predict stock needed
-					double predictedUsage = dailySalesRate * daysToPredict;
-					int recommendedOrder = currentStock < predictedUsage ? 
-							(int)Math.ceil(predictedUsage - currentStock) : 0;
-					
-					System.out.printf("%-8s %-22s %-10d %-15.2f %-15.2f %-15d%n", 
-							id, name, currentStock, dailySalesRate, predictedUsage, recommendedOrder);
+					System.out.printf("%-8s %-22s %-10d %-15.2f %-15s%n", 
+							id, name, currentStock, dailySalesRate, daysRemaining);
 				}
 			}
 			
 		} catch (Exception e) {
-			System.out.println("Error predicting stock: " + e.getMessage());
+			System.out.println("Error predicting stock duration: " + e.getMessage());
 		} finally {
 			if (rr != null) {
 				rr.close();
 			}
 		}
 	}
-	
 }
 
 	
